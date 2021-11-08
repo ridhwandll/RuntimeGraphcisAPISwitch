@@ -25,4 +25,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 
 endif()
 add_subdirectory(Source)
+add_subdirectory(Vendor/benchmark)
+set_target_properties(benchmark PROPERTIES FOLDER Dependencies)
+set_target_properties(benchmark_main PROPERTIES FOLDER Dependencies)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Engine)

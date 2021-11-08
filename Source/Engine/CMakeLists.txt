@@ -6,7 +6,7 @@ add_executable(Engine ${SOURCE_FILES})
 set_property(TARGET Engine PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 set_target_properties(Engine PROPERTIES FOLDER Engine)
 target_compile_definitions(Engine PRIVATE EXE)
-
+target_link_libraries(Engine benchmark)
 # Copy the dlls to the bin directory
 add_custom_command(
     TARGET Engine

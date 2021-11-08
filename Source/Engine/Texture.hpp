@@ -8,7 +8,7 @@ enum class RenderAPIType
 	Vulkan,
 	DirectX
 };
-static RenderAPIType GAPIType = RenderAPIType::Vulkan;
+static RenderAPIType GAPIType = RenderAPIType::DirectX;
 
 void SetAPI(RenderAPIType type)
 {
@@ -23,9 +23,12 @@ public:
 	int GetCount();
 };
 
-using TextureRenderPtr = decltype(&TextureImpl::Render);
-using TextureBindPtr = decltype(&TextureImpl::Bind);
-using TextureGetCountPtr = decltype(&TextureImpl::GetCount);
+template<auto Func>
+using FunctionType = decltype(Func);
+
+using TextureRenderPtr = FunctionType<&TextureImpl::Render>;
+using TextureBindPtr = FunctionType<&TextureImpl::Bind>;
+using TextureGetCountPtr = FunctionType<&TextureImpl::GetCount>;
 
 using PFNGetRenderMethod = TextureRenderPtr(*)();
 using PFNGetBindMethod = TextureBindPtr(*)();
@@ -51,9 +54,6 @@ public:
 		else if (GAPIType == RenderAPIType::DirectX)
 			mDllHandle = LoadLibrary("DirectX12Impl.dll");
 
-		mPfnCreateTexture = GetFunc<PFNCreateTexture>(mDllHandle, "CreateTexture");;
-		mPfnDeleteTexture = GetFunc<PFNDeleteTexture>(mDllHandle, "DeleteTexture");
-
 		PFNGetRenderMethod	pfnGetRenderMethod = GetFunc<PFNGetRenderMethod>(mDllHandle, "GetRenderFunction");
 		PFNGetBindMethod	pfnGetBindMethod = GetFunc<PFNGetBindMethod>(mDllHandle, "GetBindFunction");
 		PFNGetCountMethod	pfnGetCountMethod = GetFunc<PFNGetCountMethod>(mDllHandle, "GetCountFunction");
@@ -61,33 +61,32 @@ public:
 		mInternalRender = (pfnGetRenderMethod());
 		mInternalBind = (pfnGetBindMethod());
 		mInternalGetCount = (pfnGetCountMethod());
-		GET_WIN32_LAST_ERROR;
+
+		auto mPfnCreateTexture = GetFunc<PFNCreateTexture>(mDllHandle, "CreateTexture");;
 		mImpl = mPfnCreateTexture();
 	}
 	void Destroy()
 	{
+		auto mPfnDeleteTexture = GetFunc<PFNDeleteTexture>(mDllHandle, "DeleteTexture");
 		mPfnDeleteTexture(mImpl);
 		FreeLibrary(mDllHandle);
 	}
 	void Render()
 	{
-		(mImpl->*mInternalRender)();
+		(*mImpl.*mInternalRender)();
 	}
 	void Bind(int commandIndex)
 	{
-		(mImpl->*mInternalBind)(commandIndex);
+		(*mImpl.*mInternalBind)(commandIndex);
 	}
 	int GetCount()
 	{
 		return (mImpl->*mInternalGetCount)();
 	}
 private:
-	HMODULE mDllHandle = nullptr; // Should not be per texture(In this demo you can't create more than one texture kekw), should be loaded once at engine startup(I am lazy)
+	HMODULE mDllHandle;
 	TextureImpl* mImpl;
 	TextureRenderPtr mInternalRender;
 	TextureBindPtr mInternalBind;
 	TextureGetCountPtr mInternalGetCount;
-
-	PFNCreateTexture	mPfnCreateTexture;
-	PFNDeleteTexture	mPfnDeleteTexture;
 };
