@@ -7,6 +7,7 @@ set_property(TARGET VulkanImpl PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_S
 set_target_properties(VulkanImpl PROPERTIES FOLDER Implementation)
 
 # Copy the dll to the bin directory
+if(WIN32)
 add_custom_command(
     TARGET VulkanImpl
     POST_BUILD
@@ -14,3 +15,14 @@ add_custom_command(
         ${CMAKE_BINARY_DIR}/Source/VulkanImpl/$<CONFIGURATION>/VulkanImpl.dll
         ${CMAKE_BINARY_DIR}/Source/Engine/$<CONFIGURATION>
     )
+endif(WIN32)
+
+if(UNIX)
+add_custom_command(
+    TARGET VulkanImpl
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+        ${CMAKE_BINARY_DIR}/Source/VulkanImpl/$<CONFIGURATION>/libVulkanImpl.so
+        ${CMAKE_BINARY_DIR}/Source/Engine/$<CONFIGURATION>
+    )
+endif(UNIX)
