@@ -3,6 +3,11 @@
 
 extern "C"
 {
+	TextureImpl::TextureImpl()
+	{
+		mPath = "AHUGEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEPATHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH";
+	}
+
 	API TextureImpl* CreateTexture()
 	{
 		return (new TextureImpl());
@@ -16,25 +21,12 @@ extern "C"
 	{
 		return &TextureImpl::Render;
 	}
-	API TextureBindPtr GetBindFunction()
+	API TextureGetPathPtr GetGetPathFunction()
 	{
-		return &TextureImpl::Bind;
+		return &TextureImpl::GetPath;
 	}
 	API TextureGetCountPtr GetCountFunction()
 	{
 		return &TextureImpl::GetCount;
-	}
-
-	void TextureImpl::Render()
-	{
-	}
-
-	void TextureImpl::Bind(int commandIndex)
-	{
-	}
-
-	int TextureImpl::GetCount()
-	{
-		return 2;
 	}
 }
