@@ -15,7 +15,6 @@
 #include <string>
 #include <vector>
 
-
 enum class RenderAPIType
 {
 	Vulkan,
@@ -126,60 +125,54 @@ FuncSig GetFunc(DLL_HANDLE hDll, const char* signature)
 	return func;
 }
 
+struct TexturePointers
+{
+	TexturePointers() = default;
+	TexturePointers(DLL_HANDLE handle)
+	{
+		PFNGetRenderMethod	pfnGetRenderMethod = GetFunc<PFNGetRenderMethod>(handle, "GetRenderFunction");
+		PFNGetGetPathMethod	pfnGetGetPathMethod = GetFunc<PFNGetGetPathMethod>(handle, "GetGetPathFunction");
+		PFNGetCountMethod	pfnGetCountMethod = GetFunc<PFNGetCountMethod>(handle, "GetCountFunction");
+		InternalRender = pfnGetRenderMethod();
+		InternalGetPath = pfnGetGetPathMethod();
+		InternalGetCount = pfnGetCountMethod();
+
+		PfnCreateTexture = GetFunc<PFNCreateTexture>(handle, "CreateTexture");;
+		PfnDeleteTexture = GetFunc<PFNDeleteTexture>(handle, "DeleteTexture");
+	}
+
+	TextureRenderPtr   InternalRender;
+	TextureGetPathPtr  InternalGetPath;
+	TextureGetCountPtr InternalGetCount;
+
+	PFNCreateTexture PfnCreateTexture;
+	PFNDeleteTexture PfnDeleteTexture;
+};
+
+static TexturePointers STexturePointers;
 class Texture
 {
 public:
 	void Initialize()
 	{
-#ifdef _WIN32
-		if (GAPIType == RenderAPIType::Vulkan)
-			mDllHandle = LoadLibrary("VulkanImpl.dll");
-		else if (GAPIType == RenderAPIType::DirectX)
-			mDllHandle = LoadLibrary("DirectX12Impl.dll");
-#else	
-		if (GAPIType == RenderAPIType::Vulkan)
-			mDllHandle = dlopen("./libVulkanImpl.so", RTLD_NOW);
-		else if (GAPIType == RenderAPIType::DirectX)
-			mDllHandle = dlopen("./libDirectX12Impl.so", RTLD_NOW);
-#endif
-
-		PFNGetRenderMethod	pfnGetRenderMethod = GetFunc<PFNGetRenderMethod>(mDllHandle, "GetRenderFunction");
-		PFNGetGetPathMethod	pfnGetGetPathMethod = GetFunc<PFNGetGetPathMethod>(mDllHandle, "GetGetPathFunction");
-		PFNGetCountMethod	pfnGetCountMethod = GetFunc<PFNGetCountMethod>(mDllHandle, "GetCountFunction");
-
-		mInternalRender = (pfnGetRenderMethod());
-		mInternalGetPath = (pfnGetGetPathMethod());
-		mInternalGetCount = (pfnGetCountMethod());
-
-		auto mPfnCreateTexture = GetFunc<PFNCreateTexture>(mDllHandle, "CreateTexture");;
-		mImpl = mPfnCreateTexture();
+		mImpl = STexturePointers.PfnCreateTexture();
 	}
 	void Destroy()
 	{
-		auto mPfnDeleteTexture = GetFunc<PFNDeleteTexture>(mDllHandle, "DeleteTexture");
-		mPfnDeleteTexture(mImpl);
-#ifdef _WIN32
-		FreeLibrary(mDllHandle);
-#else
-		dlclose(mDllHandle);
-#endif
+		STexturePointers.PfnDeleteTexture(mImpl);
 	}
 	std::string Render()
 	{
-		return (*mImpl.*mInternalRender)();
+		return (mImpl->*STexturePointers.InternalRender)();
 	}
 	std::string GetPath() const
 	{
-		return (*mImpl.*mInternalGetPath)();
+		return (mImpl->*STexturePointers.InternalGetPath)();
 	}
 	int GetCount()
 	{
-		return (mImpl->*mInternalGetCount)();
+		return (mImpl->*STexturePointers.InternalGetCount)();
 	}
 private:
-	DLL_HANDLE mDllHandle;
 	TextureImpl* mImpl;
-	TextureRenderPtr mInternalRender;
-	TextureGetPathPtr mInternalGetPath;
-	TextureGetCountPtr mInternalGetCount;
 };
