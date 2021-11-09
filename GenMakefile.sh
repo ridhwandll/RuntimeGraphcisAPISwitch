@@ -1,0 +1,3 @@
+mkdir build
+cd build
+cmake .. -DBENCHMARK_ENABLE_TESTING=OFF -DBENCHMARK_ENABLE_LTO=ON
